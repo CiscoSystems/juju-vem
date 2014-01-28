@@ -1,0 +1,64 @@
+#!/usr/bin/python
+# Here do anything needed to install the service
+# i.e. apt-get install -y foo  or  bzr branch http://myserver/mycode /srv/webroot
+# Make sure this hook exits cleanly and is idempotent, common problems here are
+# failing to account for a debconf question on a dependency, or trying to pull
+# from github without installing git first.
+
+from charmhelpers.core.hookenv import (
+    log, ERROR, WARNING,
+    config,
+    relation_get,
+    relation_set,
+    relation_ids,
+    unit_get,
+    Hooks, UnregisteredHookError
+)
+from charmhelpers.fetch import (
+    apt_update,
+    apt_install,
+    filter_installed_packages,
+)
+from charmhelpers.contrib.hahelpers.apache import(
+    install_ca_cert
+)
+from charmhelpers.contrib.openstack.utils import (
+    configure_installation_source,
+    openstack_upgrade_available
+)
+from charmhelpers.payload.execd import execd_preinstall
+import os, shutil, subprocess
+
+
+DEP_PKGS = {
+        "libnl1",
+        "build-essential",
+        "linux-headers-generic",
+        "openvswitch-common=1.4.0-1ubuntu1.5",
+        "openvswitch-switch=1.4.0-1ubuntu1.5",
+}
+VEM_PKGS = {
+        "nexus-1000v-vem-dkms",
+        "nexus-1000v-vem",
+}
+
+def touch(fname):
+    if os.path.exists(fname):
+        os.utime(fname, None)
+    else:
+        open(fname, 'w').close()
+
+execd_preinstall()
+src = config('vem-origin')
+configure_installation_source(src)
+apt_update(fatal=True)
+apt_install(DEP_PKGS,['--force-yes'],fatal=True)
+
+cmd = ['apt-mark', 'hold', 'openvswitch-common', 'openvswitch-switch']
+
+if not os.path.exists('/etc/n1kv'):
+   os.mkdir('/etc/n1kv')
+   shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
+   subprocess.check_call(cmd)
+
+apt_install(VEM_PKGS,['--force-yes'],fatal=True)
