@@ -155,6 +155,7 @@ def get_host_specific_config(hostname):
         'uplink_profile': map_conf['uplink_profile'] if 'uplink_profile' in map_conf else config_get('uplink_profile'),
         'vtep_config': map_conf['vtep_config'] if 'vtep_config' in map_conf else config_get('vtep_config'),
         'node_type': map_conf['node_type'] if 'node_type' in map_conf else config_get('node_type'),
+        'vtep_in_same_subnet': map_conf['vtep_in_same_subnet'] if 'vtep_in_same_subnet' in map_conf else config_get('vtep_in_same_subnet'),
      }
      return host_conf
 
@@ -182,14 +183,29 @@ def update_n1kv_config():
    outfile = file('/etc/n1kv/n1kv.conf', 'w')
    outfile.write(str(t2))
    outfile.close()
-   #subprocess.call(["service", "n1kv", "restart"])
-   subprocess.call(["vemcmd", "reread", "config"])
-  
-#vemcmd reread config # re-reads the /etc/n1kv/n1kv.conf
+   subprocess.call(["service", "n1kv", "restart"])
+   #subprocess.call(["vemcmd", "reread", "config"])
+
 
 #------------------------------------------------------------------------------
-# create_vtep: Creates a vtep port on the OVS on a VXGW setup
+# ifconfig: ifconfig int <int-name> <up/down>
 #
 #------------------------------------------------------------------------------
-def create_vtep(vtep_name, vtpe_port_profile):
-   print "TODO: EXEC ovsctl vtep command"
+def ifconfig(interface, state):
+   juju_log("ifconfig %s %s" % (interface, state))
+   try:
+      subprocess.call(["ifconfig", interface, state])
+   except Exception, e:
+      subprocess.call(['juju-log', str(e)])
+
+
+#------------------------------------------------------------------------------
+# enable_uplink: Enable uplink interfaces
+#
+#------------------------------------------------------------------------------
+def enable_uplink(uplink_conf):
+   uplink_conf = uplink_conf.replace(', ', '\n').replace(',','\n').split('\n')
+   for k in uplink_conf:
+      ifconfig(k.split(" ")[1], "up")
+
+
