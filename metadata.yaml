@@ -1,6 +1,6 @@
 name: vem
-summary: Charm to automate installation of Cisco N1KV VEM (Virtual Ethernet Module)
-maintainer: Shiva Prasad Rao(shivrao) <shivrao@cisco.com>
+summary: Charm to automate installation of Cisco N1KV VEM
+maintainer: Shiva Prasad Rao <shivrao@cisco.com>
 subordinate: true
 description: |
    This charm automates the installation of Nexus1K VEM(Virtual
