@@ -1,8 +1,14 @@
 name: vem
-summary: vem
+summary: Charm to automate installation of Cisco N1KV VEM (Virtual Ethernet Module)
+maintainer: Shiva Prasad Rao(shivrao) <shivrao@cisco.com>
 subordinate: true
 description: |
-  uvem charm
+   This charm automates the installation of Nexus1K VEM(Virtual
+   Ethernet Module). For any compute node and selectively network node
+   VEM can be a subordinate service which provides virtual machine switch 
+   service.
+categories:
+   - misc
 requires:
   dvs:
     interface: dvs
