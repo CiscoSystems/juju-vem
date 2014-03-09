@@ -29,7 +29,7 @@ from charmhelpers.contrib.openstack.utils import (
     openstack_upgrade_available
 )
 from charmhelpers.payload.execd import execd_preinstall
-import os, shutil, subprocess, yaml, common
+import urllib, os, shutil, subprocess, yaml, common
 
 DEP_PKGS = {
         "libnl1",
@@ -49,19 +49,36 @@ def touch(fname):
         open(fname, 'w').close()
 
 execd_preinstall()
-src = config('n1kv-source')
-configure_installation_source(src)
 apt_update(fatal=True)
 apt_install(DEP_PKGS,['--force-yes'],fatal=True)
-
 cmd = ['apt-mark', 'hold', 'openvswitch-common', 'openvswitch-switch']
 
+src = config('n1kv-source')
+if src[:4] == "http":
+   src_list = src.replace(', ', '\n').replace(',','\n').split('\n')
+   for src in src_list:
+      if src[-4:] == ".deb":
+         filename = src.split('/')[-1]
+         urllib.urlretrieve(src, filename)
+         subprocess.call(["dpkg", "-i", filename])
+      else:
+         n1kv_dkms_deb = "nexus-1000v-vem-dkms_%s_all.deb" % (config('n1kv-version'))
+         n1kv_vem_deb = "nexus-1000v-vem_%s_amd64.deb" % (config('n1kv-version'))
+         urllib.urlretrieve("%s" % os.path.join(src, n1kv_dkms_deb), n1kv_dkms_deb)
+         subprocess.call(["dpkg", "-i", n1kv_dkms_deb])
+         urllib.urlretrieve("%s" % os.path.join(src, n1kv_vem_deb), n1kv_vem_deb)
+         subprocess.call(["dpkg", "-i", n1kv_vem_deb])
+else:
+   configure_installation_source(src)
+
 if not os.path.exists('/etc/n1kv'):
+   shutil.copy2('data.yaml.orig', 'data.yaml')
    os.mkdir('/etc/n1kv')
    shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
    subprocess.check_call(cmd)
 
-apt_install(VEM_PKGS,['--force-yes'],fatal=True)
+if src[:4] != "http":
+   apt_install(VEM_PKGS,['--force-yes'],fatal=True)
 
 with open('data.yaml', 'r') as f:
    temp=f.read()
@@ -69,5 +86,4 @@ with open('data.yaml', 'r') as f:
    n1kv_conf_data["n1kv_conf"]["n1kv-source"]=common.config_get('n1kv-source')
 with open('data.yaml', 'w') as f:
    f.write(yaml.dump(n1kv_conf_data, default_flow_style=True) )
-
 

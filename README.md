@@ -42,7 +42,6 @@ In this way, the hosts in the mapping mentioned in the mapping file will
 get these specific config which will overwrite the generate config provided
 in the config.yaml
 
-In this release, the VEM charm wont support add-relation with the VSM charm.
 
 Configuration
 -------------
