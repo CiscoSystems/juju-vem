@@ -52,6 +52,11 @@ execd_preinstall()
 apt_update(fatal=True)
 apt_install(DEP_PKGS,['--force-yes'],fatal=True)
 cmd = ['apt-mark', 'hold', 'openvswitch-common', 'openvswitch-switch']
+if not os.path.exists('/etc/n1kv'):
+   shutil.copy2('data.yaml.orig', 'data.yaml')
+   os.mkdir('/etc/n1kv')
+   shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
+   subprocess.check_call(cmd)
 
 src = config('n1kv-source')
 if src[:4] == "http":
@@ -71,12 +76,6 @@ if src[:4] == "http":
 else:
    configure_installation_source(src)
 
-if not os.path.exists('/etc/n1kv'):
-   shutil.copy2('data.yaml.orig', 'data.yaml')
-   os.mkdir('/etc/n1kv')
-   shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
-   subprocess.check_call(cmd)
-
 if src[:4] != "http":
    apt_install(VEM_PKGS,['--force-yes'],fatal=True)
 
@@ -86,4 +85,5 @@ with open('data.yaml', 'r') as f:
    n1kv_conf_data["n1kv_conf"]["n1kv-source"]=common.config_get('n1kv-source')
 with open('data.yaml', 'w') as f:
    f.write(yaml.dump(n1kv_conf_data, default_flow_style=True) )
+
 
