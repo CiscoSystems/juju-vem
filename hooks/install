@@ -33,6 +33,7 @@ import urllib, os, shutil, subprocess, yaml, common
 
 DEP_PKGS = {
         "libnl1",
+        "dkms",
         "build-essential",
         "linux-headers-generic",
         "openvswitch-common",
