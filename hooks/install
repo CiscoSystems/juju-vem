@@ -35,8 +35,8 @@ DEP_PKGS = {
         "libnl1",
         "build-essential",
         "linux-headers-generic",
-        "openvswitch-common=1.4*",
-        "openvswitch-switch=1.4*",
+        "openvswitch-common",
+        "openvswitch-switch",
 }
 VEM_PKGS = {
    "nexus-1000v-vem-dkms=%s*" % (config('n1kv-version')) if config('n1kv-version').strip() else 'nexus-1000v-vem-dkms',
