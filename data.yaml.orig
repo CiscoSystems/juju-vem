@@ -9,4 +9,4 @@ n1kv_conf:
    n1kv-source:
    vsm_conf_from_rel: 'false'
    vtep_in_same_subnet:
-   demo-test:   
+    
