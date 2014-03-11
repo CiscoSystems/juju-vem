@@ -6,6 +6,6 @@
 #apt-get update
 #apt-get install --force-yes -y nexus-1000v-vem-dkms
 #apt-get install --force-yes -y nexus-1000v-vem
-shutil.copy2('data.yaml.orig', 'data.yaml')
+cp data.yaml.orig data.yaml
 hooks/install
 hooks/config-changed

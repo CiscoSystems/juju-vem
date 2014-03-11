@@ -14,6 +14,8 @@ import yaml
 import Cheetah
 import common
 import pickle
+import filecmp
+import shutil
 
 from os import chmod
 from os import remove
@@ -180,10 +182,12 @@ def update_n1kv_config():
                         'vtep_config':n1kv_conf_data["n1kv_conf"]["vtep_config"].replace(', ', '\n').replace(',','\n')   
                       }])
    juju_log(str(t2))
-   outfile = file('/etc/n1kv/n1kv.conf', 'w')
+   outfile = file('/etc/n1kv/n1kv.conf.tmp', 'w')
    outfile.write(str(t2))
    outfile.close()
-   subprocess.call(["service", "n1kv", "restart"])
+   if filecmp.cmp('/etc/n1kv/n1kv.conf.tmp', '/etc/n1kv/n1kv.conf') is False:
+      shutil.copy2('/etc/n1kv/n1kv.conf.tmp', '/etc/n1kv/n1kv.conf') 
+      subprocess.call(["service", "n1kv", "restart"])
    #subprocess.call(["vemcmd", "reread", "config"])
 
 
