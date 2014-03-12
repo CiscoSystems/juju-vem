@@ -76,6 +76,7 @@ if src[:4] == "http":
          subprocess.call(["dpkg", "-i", n1kv_vem_deb])
 else:
    configure_installation_source(src)
+   apt_update(fatal=True)
 
 if src[:4] != "http":
    apt_install(VEM_PKGS,['--force-yes'],fatal=True)
