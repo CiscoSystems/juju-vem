@@ -49,5 +49,5 @@ options:
     type: string
     default: "no"
     description: "If vteps created are in same subnet for the purpose of loadbalancing, rpf checking is set to loose mode for all interfaces on the compute node and the quantum-gateway"
-    description: "Provide the local address of VEM bits"
+    
 
