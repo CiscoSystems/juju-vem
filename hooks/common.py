@@ -210,7 +210,10 @@ def ifconfig(interface, state):
 def enable_uplink(uplink_conf):
    uplink_conf = uplink_conf.replace(', ', '\n').replace(',','\n').split('\n')
    for k in uplink_conf:
-      ifconfig(k.split(" ")[1], "up")
+      try:
+         ifconfig(k.strip().split(" ")[1], "up")
+      except IndexError:
+         pass
 
 
 def import_key(keyid):
