@@ -54,7 +54,6 @@ apt_update(fatal=True)
 apt_install(DEP_PKGS,['--force-yes'],fatal=True)
 cmd = ['apt-mark', 'hold', 'openvswitch-common', 'openvswitch-switch']
 if not os.path.exists('/etc/n1kv'):
-   shutil.copy2('data.yaml.orig', 'data.yaml')
    os.mkdir('/etc/n1kv')
    shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
    subprocess.check_call(cmd)
@@ -80,6 +79,9 @@ else:
 
 if src[:4] != "http":
    apt_install(VEM_PKGS,['--force-yes'],fatal=True)
+
+if os.path.exists('data.yaml') is False:
+   shutil.copy2('data.yaml.orig', 'data.yaml')
 
 with open('data.yaml', 'r') as f:
    temp=f.read()
