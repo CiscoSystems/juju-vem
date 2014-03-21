@@ -1,7 +1,6 @@
-
 Overview
 --------
-VEM charm installs the Nexus 1000v virtual switch onto the 
+cwchang VEM charm installs the Nexus 1000v virtual switch onto the 
 compute/network nodes.
 
 VEM charm is designed as a subordinate charm. The aim is to
