@@ -197,6 +197,7 @@ def import_key(keyid):
     except subprocess.CalledProcessError:
         error_out("Error importing repo key %s" % keyid)
 
+
 def set_proxy():
     cmd = "export http_proxy=http://64.102.255.40:8080"
     try:
@@ -208,6 +209,7 @@ def set_proxy():
         subprocess.check_call(cmd)
     except subprocess.CalledProcessError:
         error_out("Unable to set httpS proxy")
+
 
 def configure_installation_source(rel):
     '''Configure apt installation source.'''

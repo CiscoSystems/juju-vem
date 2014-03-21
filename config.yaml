@@ -8,7 +8,6 @@ options:
       or a supported Cloud Archive release pocket.
       Supported Cloud Archive sources include cloud:precise-havana,
       cloud:precise-havana/updates
-    
   n1kv-vsm-ip:
     type: string
     default: "10.10.10.10"
