@@ -49,8 +49,11 @@ Configuration
 Contact Information
 -------------------
 
-Author:
-Report bugs at: http://bugs.launchpad.net/charms/+source/charmname
-Location: http://jujucharms.com/charms/distro/charmname
+Contact Information
 
+Author: Shiva Prasad Rao <shivrao@cisco.com>
+
+Report bugs at: http://bugs.launchpad.net/charms/+source/vem
+
+Location: http://jujucharms.com/charms/distro/vem
 
