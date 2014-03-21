@@ -1,28 +1,27 @@
 #!/usr/bin/python
 # vim: syntax=python
 
-import commands
 import json
 import os
-import re
-import signal
-import socket
 import subprocess
-import sys
-import time
 import yaml
-import Cheetah
-import common
-import pickle
 import filecmp
 import shutil
 
-from os import chmod
-from os import remove
-from os.path import exists
-from string import Template
-from yaml.constructor import ConstructorError
 from Cheetah.Template import Template
+from charmhelpers.contrib.openstack.utils import (
+    error_out,
+    CLOUD_ARCHIVE_URL,
+)
+
+from charmhelpers.core.host import (
+    lsb_release,
+)
+
+from charmhelpers.fetch import (
+    apt_install,
+)
+
 
 ###############################################################################
 # Supporting functions
@@ -47,14 +46,15 @@ def juju_log(message=None):
 #                    error.
 #------------------------------------------------------------------------------
 def service(service_name=None, service_action=None):
-    juju_log("service: %s, action: %s" % (service_name, service_action))
+    juju_log("service: %s, action: %s"
+             % (service_name, service_action))
     if service_name is not None and service_action is not None:
         retVal = subprocess.call(
             ["service", service_name, service_action]) == 0
     else:
         retVal = False
-    juju_log("service %s %s returns: %s" %
-    (service_name, service_action, retVal))
+    juju_log("service %s %s returns: %s"
+             % (service_name, service_action, retVal))
     return(retVal)
 
 
@@ -77,7 +77,6 @@ def unit_get(setting_name=None):
     finally:
         juju_log("unit_get %s returns: %s" % (setting_name, unit_data))
         return(unit_data)
-
 
 
 #------------------------------------------------------------------------------
@@ -112,8 +111,8 @@ def config_get(scope=None):
 #                relation_id:  specify relation id for out of context usage.
 #------------------------------------------------------------------------------
 def relation_get(scope=None, unit_name=None, relation_id=None):
-    juju_log("relation_get: scope: %s, unit_name: %s, relation_id: %s" %
-    (scope, unit_name, relation_id))
+    juju_log("relation_get: scope: %s, unit_name: %s, relation_id: %s"
+             % (scope, unit_name, relation_id))
     try:
         relation_cmd_line = ['relation-get', '--format=json']
         if relation_id is not None:
@@ -133,24 +132,23 @@ def relation_get(scope=None, unit_name=None, relation_id=None):
         return(relation_data)
 
 
-
 #------------------------------------------------------------------------------
-# get_host_specific_config: Returns the appropriate config for the desired 
+# get_host_specific_config: Returns the appropriate config for the desired
 #                           hostname
 #
 #------------------------------------------------------------------------------
 def get_host_specific_config(hostname):
-     mapping=yaml.load(config_get('mapping'), Loader=yaml.loader.BaseLoader)
-     print mapping
-     map_conf = dict()
-     if mapping is not None:
+    mapping = yaml.load(config_get('mapping'), Loader=yaml.loader.BaseLoader)
+    print mapping
+    map_conf = dict()
+    if mapping is not None:
         for k, v in mapping.iteritems():
             if k in [hostname]:
-               print("APPLY HOST SPEC CONF")
-               juju_log("Config for %s to be applied" % hostname)
-               map_conf = v
-     juju_log("Applying general config")
-     host_conf = { 
+                print("APPLY HOST SPEC CONF")
+                juju_log("Config for %s to be applied" % hostname)
+                map_conf = v
+    juju_log("Applying general config")
+    host_conf = {
         'n1kv-vsm-ip': map_conf['n1kv-vsm-ip'] if 'n1kv-vsm-ip' in map_conf else config_get('n1kv-vsm-ip'),
         'n1kv-vsm-domain-id': map_conf['n1kv-vsm-domain-id'] if 'n1kv-vsm-domain-id' in map_conf else config_get('n1kv-vsm-domain-id'),
         'host_mgmt_intf': map_conf['host_mgmt_intf'] if 'host_mgmt_intf' in map_conf else config_get('host_mgmt_intf'),
@@ -158,9 +156,8 @@ def get_host_specific_config(hostname):
         'vtep_config': map_conf['vtep_config'] if 'vtep_config' in map_conf else config_get('vtep_config'),
         'node_type': map_conf['node_type'] if 'node_type' in map_conf else config_get('node_type'),
         'vtep_in_same_subnet': map_conf['vtep_in_same_subnet'] if 'vtep_in_same_subnet' in map_conf else config_get('vtep_in_same_subnet'),
-     }
-     return host_conf
-
+    }
+    return host_conf
 
 
 #------------------------------------------------------------------------------
@@ -169,26 +166,25 @@ def get_host_specific_config(hostname):
 #
 #------------------------------------------------------------------------------
 def update_n1kv_config():
-   juju_log("update_n1kv_config")
-   with open('data.yaml', 'r') as f:
-        temp=f.read()
-   n1kv_conf_data = yaml.load(temp, Loader=yaml.loader.BaseLoader)
-   t2 = Template( file = 'templates/n1kv.conf.tmpl', 
-        searchList = [{ 'host_mgmt_intf':n1kv_conf_data["n1kv_conf"]["host_mgmt_intf"],
-                        'uplink_profile':n1kv_conf_data["n1kv_conf"]["uplink_profile"].replace(', ', '\n').replace(',','\n'),
-                        'vsm_ip':n1kv_conf_data["n1kv_conf"]["n1kv-vsm-ip"],
-                        'vsm_domain_id':n1kv_conf_data["n1kv_conf"]["n1kv-vsm-domain-id"],   
-                        'node_type':n1kv_conf_data["n1kv_conf"]["node_type"],   
-                        'vtep_config':n1kv_conf_data["n1kv_conf"]["vtep_config"].replace(', ', '\n').replace(',','\n')   
-                      }])
-   juju_log(str(t2))
-   outfile = file('/etc/n1kv/n1kv.conf.tmp', 'w')
-   outfile.write(str(t2))
-   outfile.close()
-   if filecmp.cmp('/etc/n1kv/n1kv.conf.tmp', '/etc/n1kv/n1kv.conf') is False:
-      shutil.copy2('/etc/n1kv/n1kv.conf.tmp', '/etc/n1kv/n1kv.conf') 
-      subprocess.call(["service", "n1kv", "restart"])
-   #subprocess.call(["vemcmd", "reread", "config"])
+    juju_log("update_n1kv_config")
+    with open('data.yaml', 'r') as f:
+        temp = f.read()
+    n1kv_conf_data = yaml.load(temp, Loader=yaml.loader.BaseLoader)
+    t2 = Template(file='templates/n1kv.conf.tmpl',
+                  searchList=[{'host_mgmt_intf': n1kv_conf_data["n1kv_conf"]["host_mgmt_intf"],
+                               'uplink_profile': n1kv_conf_data["n1kv_conf"]["uplink_profile"].replace(', ', '\n').replace(',', '\n'),
+                               'vsm_ip': n1kv_conf_data["n1kv_conf"]["n1kv-vsm-ip"],
+                               'vsm_domain_id': n1kv_conf_data["n1kv_conf"]["n1kv-vsm-domain-id"],
+                               'node_type': n1kv_conf_data["n1kv_conf"]["node_type"],
+                               'vtep_config': n1kv_conf_data["n1kv_conf"]["vtep_config"].replace(', ', '\n').replace(',', '\n')}])
+    juju_log(str(t2))
+    outfile = file('/etc/n1kv/n1kv.conf.tmp', 'w')
+    outfile.write(str(t2))
+    outfile.close()
+    if filecmp.cmp('/etc/n1kv/n1kv.conf.tmp', '/etc/n1kv/n1kv.conf') is False:
+        shutil.copy2('/etc/n1kv/n1kv.conf.tmp', '/etc/n1kv/n1kv.conf')
+        subprocess.call(["service", "n1kv", "restart"])
+    #subprocess.call(["vemcmd", "reread", "config"])
 
 
 #------------------------------------------------------------------------------
@@ -196,11 +192,11 @@ def update_n1kv_config():
 #
 #------------------------------------------------------------------------------
 def ifconfig(interface, state):
-   juju_log("ifconfig %s %s" % (interface, state))
-   try:
-      subprocess.call(["ifconfig", interface, state])
-   except Exception, e:
-      subprocess.call(['juju-log', str(e)])
+    juju_log("ifconfig %s %s" % (interface, state))
+    try:
+        subprocess.call(["ifconfig", interface, state])
+    except Exception, e:
+        subprocess.call(['juju-log', str(e)])
 
 
 #------------------------------------------------------------------------------
@@ -208,12 +204,12 @@ def ifconfig(interface, state):
 #
 #------------------------------------------------------------------------------
 def enable_uplink(uplink_conf):
-   uplink_conf = uplink_conf.replace(', ', '\n').replace(',','\n').split('\n')
-   for k in uplink_conf:
-      try:
-         ifconfig(k.strip().split(" ")[1], "up")
-      except IndexError:
-         pass
+    uplink_conf = uplink_conf.replace(', ', '\n').replace(',', '\n').split('\n')
+    for k in uplink_conf:
+        try:
+            ifconfig(k.strip().split(" ")[1], "up")
+        except IndexError:
+            pass
 
 
 def import_key(keyid):
@@ -224,72 +220,67 @@ def import_key(keyid):
     except subprocess.CalledProcessError:
         error_out("Error importing repo key %s" % keyid)
 
+
 def configure_installation_source(rel):
     '''Configure apt installation source.'''
-    rel_list = rel.replace(', ', '\n').replace(',','\n').split('\n')
+    rel_list = rel.replace(', ', '\n').replace(',', '\n').split('\n')
     if os.path.exists('/etc/apt/sources.list.d/n1k_deb.list'):
-       os.remove('/etc/apt/sources.list.d/n1k_deb.list')
+        os.remove('/etc/apt/sources.list.d/n1k_deb.list')
     for rel in rel_list:
-       if rel == 'distro':
-           return
-       elif rel[:4] == "ppa:":
-           src = rel
-           subprocess.check_call(["add-apt-repository", "-y", src])
-       elif rel[:3] == "deb":
-           l = len(rel.split('|'))
-           if l == 2:
-               src, key = rel.split('|')
-               juju_log("Importing PPA key from keyserver for %s" % src)
-               import_key(key)
-           elif l == 1:
-               src = rel
-           with open('/etc/apt/sources.list.d/n1k_deb.list', 'ab+') as f:
-               f.write("%s \n" % (src))
-       elif rel[:6] == 'cloud:':
-           ubuntu_rel = lsb_release()['DISTRIB_CODENAME']
-           rel = rel.split(':')[1]
-           u_rel = rel.split('-')[0]
-           ca_rel = rel.split('-')[1]
+        if rel == 'distro':
+            return
+        elif rel[:4] == "ppa:":
+            src = rel
+            subprocess.check_call(["add-apt-repository", "-y", src])
+        elif rel[:3] == "deb":
+            l = len(rel.split('|'))
+            if l == 2:
+                src, key = rel.split('|')
+                juju_log("Importing PPA key from keyserver for %s" % src)
+                import_key(key)
+            elif l == 1:
+                src = rel
+            with open('/etc/apt/sources.list.d/n1k_deb.list', 'ab+') as f:
+                f.write("%s \n" % (src))
+        elif rel[:6] == 'cloud:':
+            ubuntu_rel = lsb_release()['DISTRIB_CODENAME']
+            rel = rel.split(':')[1]
+            u_rel = rel.split('-')[0]
+            ca_rel = rel.split('-')[1]
 
-           if u_rel != ubuntu_rel:
-               e = 'Cannot install from Cloud Archive pocket %s on this Ubuntu '\
-                   'version (%s)' % (ca_rel, ubuntu_rel)
-               error_out(e)
+            if u_rel != ubuntu_rel:
+                e = 'Cannot install from Cloud Archive pocket %s on this Ubuntu '\
+                    'version (%s)' % (ca_rel, ubuntu_rel)
+                error_out(e)
 
-           if 'staging' in ca_rel:
-               # staging is just a regular PPA.
-               os_rel = ca_rel.split('/')[0]
-               ppa = 'ppa:ubuntu-cloud-archive/%s-staging' % os_rel
-               cmd = 'add-apt-repository -y %s' % ppa
-               subprocess.check_call(cmd.split(' '))
-               return
+            if 'staging' in ca_rel:
+                # staging is just a regular PPA.
+                os_rel = ca_rel.split('/')[0]
+                ppa = 'ppa:ubuntu-cloud-archive/%s-staging' % os_rel
+                cmd = 'add-apt-repository -y %s' % ppa
+                subprocess.check_call(cmd.split(' '))
+                return
+            # map charm config options to actual archive pockets.
+            pockets = {'folsom': 'precise-updates/folsom',
+                       'folsom/updates': 'precise-updates/folsom',
+                       'folsom/proposed': 'precise-proposed/folsom',
+                       'grizzly': 'precise-updates/grizzly',
+                       'grizzly/updates': 'precise-updates/grizzly',
+                       'grizzly/proposed': 'precise-proposed/grizzly',
+                       'havana': 'precise-updates/havana',
+                       'havana/updates': 'precise-updates/havana',
+                       'havana/proposed': 'precise-proposed/havana', }
 
+            try:
+                pocket = pockets[ca_rel]
+            except KeyError:
+                e = 'Invalid Cloud Archive release specified: %s' % rel
+                error_out(e)
 
-        # map charm config options to actual archive pockets.
-           pockets = {
-               'folsom': 'precise-updates/folsom',
-               'folsom/updates': 'precise-updates/folsom',
-               'folsom/proposed': 'precise-proposed/folsom',
-               'grizzly': 'precise-updates/grizzly',
-               'grizzly/updates': 'precise-updates/grizzly',
-               'grizzly/proposed': 'precise-proposed/grizzly',
-               'havana': 'precise-updates/havana',
-               'havana/updates': 'precise-updates/havana',
-               'havana/proposed': 'precise-proposed/havana',
-           }
+            src = "deb %s %s main" % (CLOUD_ARCHIVE_URL, pocket)
+            apt_install('ubuntu-cloud-keyring', fatal=True)
 
-           try:
-               pocket = pockets[ca_rel]
-           except KeyError:
-               e = 'Invalid Cloud Archive release specified: %s' % rel
-               error_out(e)
-
-           src = "deb %s %s main" % (CLOUD_ARCHIVE_URL, pocket)
-           apt_install('ubuntu-cloud-keyring', fatal=True)
-
-           with open('/etc/apt/sources.list.d/cloud-archive.list', 'ab+') as f:
-               f.write("%s \n" % (src))
-       else:
-           error_out("Invalid openstack-release specified: %s" % rel)
-
-
+            with open('/etc/apt/sources.list.d/cloud-archive.list', 'ab+') as f:
+                f.write("%s \n" % (src))
+        else:
+            error_out("Invalid openstack-release specified: %s" % rel)
