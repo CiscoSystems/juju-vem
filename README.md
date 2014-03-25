@@ -28,12 +28,12 @@ juju set vem mapping="$(cat mapping.yaml)"
 
 Here is a sample of the mapping file:
 maas-node-1:
-  host_mgmt_intf: eth1
-  uplink_profile: phys eth1 profile sys-uplink
+  host_mgmt_intf: eth0
+  uplink_profile: phys eth3 profile sys-uplink
   node-type: compute
 maas-node-3:
   host_mgmt_intf: eth0
-  uplink_profile: phys eth0 profile sys-uplink 
+  uplink_profile: phys eth4 profile sys-uplink 
   node-type: network
   vtep_config: 'virt vmknic-int1 profile profint mode dhcp mac 00:21:32:43:54:76'
   
