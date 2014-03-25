@@ -30,12 +30,12 @@ Here is a sample of the mapping file:
 maas-node-1:
   host_mgmt_intf: eth0
   uplink_profile: phys eth3 profile sys-uplink
-  node-type: compute
+  node_type: compute
 maas-node-3:
   host_mgmt_intf: eth0
   uplink_profile: phys eth4 profile sys-uplink 
-  node-type: network
-  vtep_config: 'virt vmknic-int1 profile profint mode dhcp mac 00:21:32:43:54:76'
+  node_type: network
+  vtep_config: 'virt vtep1-nw2 profile vxlan-vtep mode static address 6.0.8.253 netmask 255.255.0.0 mac 0e:1f:56:cf:82:53'
   
 In this way, the hosts in the mapping mentioned in the mapping file will
 get these specific config which will overwrite the generate config provided
