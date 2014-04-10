@@ -3,11 +3,8 @@ options:
     default: distro
     type: string
     description: |
-      Repository from which to install.  May be one of the following:
-      distro (default), ppa:somecustom/ppa, a deb url sources entry,
-      or a supported Cloud Archive release pocket.
-      Supported Cloud Archive sources include cloud:precise-havana,
-      cloud:precise-havana/updates
+      Repository from which to install vem binaries.eg. cisco private ppa. The value needs be input in the following format:
+      "deb https://<user>:<auth-token>@private-ppa.launchpad.net/<archive>/ precise main|<keyid>"
   n1kv-vsm-ip:
     type: string
     default: "10.10.10.10"
@@ -26,7 +23,7 @@ options:
     description: "Port-Profile mapping for all UVEM managed Interfaces"
   vtep_config:
     type: string
-    default: " "
+    default: ""
     description: "VTEP config. Syntax: virt <port-name> profile <profile-name> [mode static|dhcp] [address <ipaddr>]"
   node_type:
     type: string
