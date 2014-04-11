@@ -6,27 +6,14 @@
 # from github without installing git first.
 
 from charmhelpers.core.hookenv import (
-    log, ERROR, WARNING,
     config,
-    relation_get,
-    relation_set,
-    relation_ids,
-    unit_get,
-    Hooks, UnregisteredHookError
 )
 from charmhelpers.fetch import (
     apt_update,
     apt_install,
-    filter_installed_packages,
-)
-from charmhelpers.contrib.hahelpers.apache import(
-    install_ca_cert
 )
 from common import (
-   configure_installation_source
-)
-from charmhelpers.contrib.openstack.utils import (
-    openstack_upgrade_available
+    configure_installation_source
 )
 from charmhelpers.payload.execd import execd_preinstall
 import urllib, os, shutil, subprocess, yaml, common
@@ -40,9 +27,11 @@ DEP_PKGS = {
         "openvswitch-switch",
 }
 VEM_PKGS = {
-   "nexus-1000v-vem-dkms=%s*" % (config('n1kv-version')) if config('n1kv-version').strip() else 'nexus-1000v-vem-dkms',
-   "nexus-1000v-vem=%s*" % (config('n1kv-version')) if config('n1kv-version').strip() else 'nexus-1000v-vem'
+    "nexus-1000v-vem-dkms=%s*" % (config('n1kv-version')) if config('n1kv-version').strip() else 'nexus-1000v-vem-dkms',
+    "nexus-1000v-vem=%s*" % (config('n1kv-version')) if config('n1kv-version').strip() else 'nexus-1000v-vem'
 }
+
+
 def touch(fname):
     if os.path.exists(fname):
         os.utime(fname, None)
@@ -51,43 +40,41 @@ def touch(fname):
 
 execd_preinstall()
 apt_update(fatal=True)
-apt_install(DEP_PKGS,['--force-yes'],fatal=True)
+apt_install(DEP_PKGS, ['--force-yes'], fatal=True)
 cmd = ['apt-mark', 'hold', 'openvswitch-common', 'openvswitch-switch']
 if not os.path.exists('/etc/n1kv'):
-   os.mkdir('/etc/n1kv')
-   shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
-   subprocess.check_call(cmd)
+    os.mkdir('/etc/n1kv')
+    shutil.copy2('templates/n1kv.conf.tmpl', '/etc/n1kv/n1kv.conf')
+    subprocess.check_call(cmd)
 
 src = config('n1kv-source')
 if src[:4] == "http":
-   src_list = src.replace(', ', '\n').replace(',','\n').split('\n')
-   for src in src_list:
-      if src[-4:] == ".deb":
-         filename = src.split('/')[-1]
-         urllib.urlretrieve(src, filename)
-         subprocess.call(["dpkg", "-i", filename])
-      else:
-         n1kv_dkms_deb = "nexus-1000v-vem-dkms_%s_all.deb" % (config('n1kv-version'))
-         n1kv_vem_deb = "nexus-1000v-vem_%s_amd64.deb" % (config('n1kv-version'))
-         urllib.urlretrieve("%s" % os.path.join(src, n1kv_dkms_deb), n1kv_dkms_deb)
-         subprocess.call(["dpkg", "-i", n1kv_dkms_deb])
-         urllib.urlretrieve("%s" % os.path.join(src, n1kv_vem_deb), n1kv_vem_deb)
-         subprocess.call(["dpkg", "-i", n1kv_vem_deb])
+    src_list = src.replace(', ', '\n').replace(',', '\n').split('\n')
+    for src in src_list:
+        if src[-4:] == ".deb":
+            filename = src.split('/')[-1]
+            urllib.urlretrieve(src, filename)
+            subprocess.call(["dpkg", "-i", filename])
+        else:
+            n1kv_dkms_deb = "nexus-1000v-vem-dkms_%s_all.deb" % (config('n1kv-version'))
+            n1kv_vem_deb = "nexus-1000v-vem_%s_amd64.deb" % (config('n1kv-version'))
+            urllib.urlretrieve("%s" % os.path.join(src, n1kv_dkms_deb), n1kv_dkms_deb)
+            subprocess.call(["dpkg", "-i", n1kv_dkms_deb])
+            urllib.urlretrieve("%s" % os.path.join(src, n1kv_vem_deb), n1kv_vem_deb)
+            subprocess.call(["dpkg", "-i", n1kv_vem_deb])
 else:
-   configure_installation_source(src)
-   apt_update(fatal=True)
+    configure_installation_source(src)
+    apt_update(fatal=True)
 
 if src[:4] != "http":
-   apt_install(VEM_PKGS,['--force-yes'],fatal=True)
+    apt_install(VEM_PKGS, ['--force-yes'], fatal=True)
 
 if os.path.exists('data.yaml') is False:
-   shutil.copy2('data.yaml.orig', 'data.yaml')
+    shutil.copy2('data.yaml.orig', 'data.yaml')
 
 with open('data.yaml', 'r') as f:
-   temp=f.read()
-   n1kv_conf_data = yaml.load(temp, Loader=yaml.loader.BaseLoader)
-   n1kv_conf_data["n1kv_conf"]["n1kv-source"]=common.config_get('n1kv-source')
+    temp = f.read()
+    n1kv_conf_data = yaml.load(temp, Loader=yaml.loader.BaseLoader)
+    n1kv_conf_data["n1kv_conf"]["n1kv-source"] = common.config_get('n1kv-source')
 with open('data.yaml', 'w') as f:
-   f.write(yaml.dump(n1kv_conf_data, default_flow_style=True) )
-
-
+    f.write(yaml.dump(n1kv_conf_data, default_flow_style=True))

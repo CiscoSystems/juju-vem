@@ -20,13 +20,14 @@ be common to all VEM hosts in environement. If you need to
 configure host-specific config to each host depending on its fqdn,
 a mapping file can be provided as a string to the variable called
 mapping.
-
+```
 juju deploy nova-compute
 juju deploy --config=config.yaml vem
 juju add-relation nova-compute vem
 juju set vem mapping="$(cat mapping.yaml)"
-
+```
 Here is a sample of the mapping file:
+```
 maas-node-1:
   host_mgmt_intf: eth0
   uplink_profile: phys eth3 profile sys-uplink
@@ -36,7 +37,7 @@ maas-node-3:
   uplink_profile: phys eth4 profile sys-uplink 
   node_type: network
   vtep_config: 'virt vtep1-nw2 profile vxlan-vtep mode static address 6.0.8.253 netmask 255.255.0.0 mac 0e:1f:56:cf:82:53'
-  
+```
 In this way, the hosts in the mapping mentioned in the mapping file will
 get these specific config which will overwrite the generate config provided
 in the config.yaml

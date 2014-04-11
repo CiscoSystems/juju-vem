@@ -1,14 +1,10 @@
 #!/usr/bin/env python
 # config-changed occurs everytime a new configuration value is updated (juju set)
 
-import os
 import subprocess
 import socket
 import yaml
-import Cheetah
 import common
-
-from yaml.constructor import ConstructorError
 
 #Add host specific config here
 hostname = socket.gethostname()
@@ -22,34 +18,33 @@ hostname = socket.gethostname()
 host_conf = common.get_host_specific_config(hostname)
 vtep_name = None
 with open('data.yaml', 'r') as f:
-   temp=f.read()
-   n1kv_conf_data = yaml.load(temp, Loader=yaml.loader.BaseLoader)
-   if (common.config_get('n1kv-source') != n1kv_conf_data["n1kv_conf"]["n1kv-source"]) or (common.config_get('n1kv-version') != n1kv_conf_data["n1kv_conf"]["n1kv-version"]):
-      subprocess.call("hooks/install")
-   n1kv_conf_data["n1kv_conf"]["n1kv-source"]=common.config_get('n1kv-source')
-   n1kv_conf_data["n1kv_conf"]["n1kv-version"]=common.config_get('n1kv-version')
-   if (n1kv_conf_data["n1kv_conf"]["vsm_conf_from_rel"] == "false"):
-      n1kv_conf_data["n1kv_conf"]["n1kv-vsm-ip"]=host_conf['n1kv-vsm-ip']
-      n1kv_conf_data["n1kv_conf"]["n1kv-vsm-domain-id"]=host_conf['n1kv-vsm-domain-id']
-   n1kv_conf_data["n1kv_conf"]["host_mgmt_intf"]=host_conf['host_mgmt_intf']
-   n1kv_conf_data["n1kv_conf"]["uplink_profile"]=host_conf['uplink_profile']
-   n1kv_conf_data["n1kv_conf"]["node_type"]=host_conf['node_type']
-   n1kv_conf_data["n1kv_conf"]["vtep_in_same_subnet"]=host_conf['vtep_in_same_subnet']
-   if 'vtep_config' in host_conf:
-      n1kv_conf_data["n1kv_conf"]["vtep_config"]=host_conf['vtep_config']
+    temp = f.read()
+    n1kv_conf_data = yaml.load(temp, Loader=yaml.loader.BaseLoader)
+    if (common.config_get('n1kv-source') != n1kv_conf_data["n1kv_conf"]["n1kv-source"]) or (common.config_get('n1kv-version') != n1kv_conf_data["n1kv_conf"]["n1kv-version"]):
+        subprocess.call("hooks/install")
+    n1kv_conf_data["n1kv_conf"]["n1kv-source"] = common.config_get('n1kv-source')
+    n1kv_conf_data["n1kv_conf"]["n1kv-version"] = common.config_get('n1kv-version')
+    if (n1kv_conf_data["n1kv_conf"]["vsm_conf_from_rel"] == "false"):
+        n1kv_conf_data["n1kv_conf"]["n1kv-vsm-ip"] = host_conf['n1kv-vsm-ip']
+        n1kv_conf_data["n1kv_conf"]["n1kv-vsm-domain-id"] = host_conf['n1kv-vsm-domain-id']
+    n1kv_conf_data["n1kv_conf"]["host_mgmt_intf"] = host_conf['host_mgmt_intf']
+    n1kv_conf_data["n1kv_conf"]["uplink_profile"] = host_conf['uplink_profile']
+    n1kv_conf_data["n1kv_conf"]["node_type"] = host_conf['node_type']
+    n1kv_conf_data["n1kv_conf"]["vtep_in_same_subnet"] = host_conf['vtep_in_same_subnet']
+    if 'vtep_config' in host_conf:
+        n1kv_conf_data["n1kv_conf"]["vtep_config"] = host_conf['vtep_config']
 with open('data.yaml', 'w') as f:
-   f.write(yaml.dump(n1kv_conf_data, default_flow_style=True) )
+    f.write(yaml.dump(n1kv_conf_data, default_flow_style=True))
 
 
 if n1kv_conf_data["n1kv_conf"]["vtep_in_same_subnet"] == "yes":
-   #if not os.path.isfile("/etc/sysctl.d/60-n1kv.conf"):
-   f = open("/etc/sysctl.d/60-n1kv.conf", 'w')
-   f.writelines(["net.ipv4.conf.default.rp_filter=2\n", "net.ipv4.conf.all.rp_filter=2\n", "net.ipv4.conf.default.arp_ignore=1\n", "net.ipv4.conf.all.arp_ignore=1\n", "net.ipv4.conf.all.arp_announce=2\n", "net.ipv4.conf.default.arp_announce=2\n"])
-   f.close()
-   subprocess.call(["sysctl", "-p", "/etc/sysctl.d/60-n1kv.conf"])
+    #if not os.path.isfile("/etc/sysctl.d/60-n1kv.conf"):
+    f = open("/etc/sysctl.d/60-n1kv.conf", 'w')
+    f.writelines(["net.ipv4.conf.default.rp_filter=2\n", "net.ipv4.conf.all.rp_filter=2\n", "net.ipv4.conf.default.arp_ignore=1\n", "net.ipv4.conf.all.arp_ignore=1\n", "net.ipv4.conf.all.arp_announce=2\n", "net.ipv4.conf.default.arp_announce=2\n"])
+    f.close()
+    subprocess.call(["sysctl", "-p", "/etc/sysctl.d/60-n1kv.conf"])
 
 common.update_n1kv_config()
 #Enable all required uplink on the host (ifconfig <interface> up)
 common.enable_uplink(n1kv_conf_data["n1kv_conf"]["uplink_profile"])
 common.enable_uplink(n1kv_conf_data["n1kv_conf"]["vtep_config"])
-
